@@ -44,19 +44,28 @@ if username == "" or password == "" or api_key == "" or email_user == "" or emai
 start_time = yesterday.strftime("%Y%m%d")
 end_time = yesterday.strftime("%Y%m%d")
 noon_start = "120000.000"
-noon_plus_1hr = "130000.000"
 noon_end = "115959.999"
 
-start_timestamp = start_time + noon_start
-end_timestamp =   end_time + noon_plus_1hr
+# Used for testing purposes, can be left when in production
+test_start = "120000.000"
+test_end = "130000.000"
 
-print(start_timestamp)
-print(end_timestamp)
+# Configured to fetch the video files from the previous 24 hour period, from noon to noon
+# start_timestamp = start_time + noon_start
+# end_timestamp =   end_time + noon_end
+
+###
+# Comment out the above start_timestamp and end_timestamp and instead uncomment the ones below when testing
+###
+
+start_timestamp = start_time + test_start
+end_timestamp = end_time + test_end
 
 if start_timestamp == "" or end_timestamp == "":
     print("Please put in a start and ending time")
     sys.exit()
 
+# print("Fetching video files from yesterday, " + start_time)
 
 # Translating the HTTP response codes to make the status messages easier to read
 HTTP_STATUS_CODE = { 
@@ -69,7 +78,6 @@ HTTP_STATUS_CODE = {
     502: 'API had a problem (502)',
     503: 'API had a problem (503)'
     }
-
 
 ###
 # Step 1: login (part 1)
@@ -84,8 +92,8 @@ headers = {'content-type': 'application/json', 'authorization': api_key }
 response = session.request("POST", url, data=payload, headers=headers)
 
 print ("Step 1 - Logging In: %s" % HTTP_STATUS_CODE[response.status_code])
-token = response.json()['token']
 
+token = response.json()['token']
 
 ###
 # Step 2: login (part 2)
@@ -103,7 +111,6 @@ response = session.request("POST", url, data=payload, headers=headers)
 print("Step 2 - Authorizing: %s" % HTTP_STATUS_CODE[response.status_code])
 
 current_user = response.json()
-
 
 ###
 # Step 3: get list of devices
@@ -124,6 +131,7 @@ camera_id_list = [i[1] for i in device_list if i[3] == 'camera']
 
 # Total # of cameras in the environment
 camera_list_len = len(camera_id_list)
+print("Found %s cameras..." % camera_list_len)
 
 ###
 # Step 4: Iterate through all of the cameras and video lists, which we'll use to download the files
@@ -147,7 +155,6 @@ def get_video_list(camera_id):
 # Use these functions to create files containing device_list, camera_id_list, video_list info.
 ###
 
-"""
 def save_device_list_to_file(device_list):
     with open("device_list.txt", "w") as file:
         file.write(json.dumps(device_list))
@@ -163,13 +170,11 @@ def save_video_list_to_file(video_list):
         file.write(json.dumps(video_list))
     print("video_list saved as new file: 'video_list'.")
 
-
 # Use the function below to recall the stored video list
 def load_video_list_from_file(camera_id):
     with open(camera_id, "w") as file:
-        video_list_read = file.read(json.loads(video_list))
+        video_list_read = file.read(json.loads(camera_id))
     return video_list_read
-"""
 
 ###
 # Step 5: Download the files from the video_list to the local directory
@@ -178,11 +183,10 @@ def load_video_list_from_file(camera_id):
 def download_videos(camera_id,video_list):
     current_video = 0
     download_status = current_video + 1
-    video_list_total = len(video_list)
-    
-    while current_video < video_list_total:
+       
+    while current_video < len(video_list):
         download_status = current_video + 1
-        print("Downloading video ", download_status, " of ", video_list_total)
+        print("Downloading video %s of %s..." % (download_status, len(video_list)))
         url = "https://login.eagleeyenetworks.com/asset/play/video.flv"
 
         querystring = {"id": camera_id, "start_timestamp": video_list[current_video]['s'], "end_timestamp": video_list[current_video]['e']}
@@ -191,6 +195,7 @@ def download_videos(camera_id,video_list):
         headers = {'authorization': api_key}
 
         response = session.request("GET", url, data=payload, params=querystring, headers=headers)
+        print(HTTP_STATUS_CODE[response.status_code])
 
         if response.status_code == 200:
             local_filename = "%s-%s.flv" % (camera_id, video_list[current_video]['e'])
@@ -203,23 +208,34 @@ def download_videos(camera_id,video_list):
                     else:
                         print("error downloading last file...")
                         continue
+        else:
+            print("HTTP Status Code: %s" % HTTP_STATUS_CODE[response.status_code])
+            continue
     else:
-        print("Finished downloading videos for camera_id " + camera_id + "...")
+        print("Finished downloading videos for camera_id %s ..." % camera_id)
 
 
 ###
 # Step 6: Initiate the script
 ###
 
-print("Looking for videos to download...")
+print("Gathering list of videos to download for each camera...")
 
-download_queue = 0
+session_list = {}
 
 for camera_id in camera_id_list:
-    if download_queue < camera_list_len:
-        print("Found videos to download from camera_id " + camera_id)
-        video_list_download = get_video_list(camera_id)
-        download_videos(camera_id,video_list_download)
-        download_queue += 1
+    video_list = get_video_list(camera_id)
+    video_list_len = len(video_list)
+    if video_list_len > 0:
+        print("Found %s videos to download for camera %s" % (video_list_len, camera_id))
+        session_list[camera_id] = video_list
     else:
-        print("Downloads Finished. Have a nice day...")
+        print("No videos found for camera %s. Skipping..." % camera_id)
+
+camera_ids_with_files = len(session_list)
+print("%s of %s cameras have video files ready to download." % (camera_ids_with_files, camera_list_len))
+
+for key in session_list:
+    print("Initializing download of %s video files for camera %s" % (len(session_list[key]), key))
+    download_videos(key, session_list[key])
+
