@@ -23,7 +23,7 @@ contains username/password and API key needed to run the script. Credentials wil
 
 7. If any other HTTP Status Code is returned (error, etc.) the error is noted in the log and continues to the next file to download.
 
-# Additional Functionality
+# Additional Functionality (To-do)
 1. Add additional logging - create a file with list of camera_ids, video_files, etc. Create a log of files that aren't able to download due to HTTP Response Code Error
 
 2. Notifications - create notification service, email XX user when script has:
