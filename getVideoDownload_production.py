@@ -204,6 +204,7 @@ def download_videos(camera_id,video_list):
             with open(local_filename, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=1024):
                     if chunk:
+                        print("Downloading %s" % local_filename)
                         f.write(chunk)
                     else:
                         print("error downloading last file...")
