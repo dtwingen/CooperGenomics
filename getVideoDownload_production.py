@@ -4,6 +4,11 @@ import sys
 import local_settings
 import datetime
 import smtplib
+import logging
+
+###
+# Test Logging
+###
 
 now = datetime.datetime.now()
 yesterday = now - datetime.timedelta(days = 1)
