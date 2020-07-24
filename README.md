@@ -7,6 +7,9 @@ This is the main python script that will run the fetch/download process. Credent
 # local_settings.py
 contains username/password and API key needed to run the script. Credentials will need to be updated when the script is placed into production
 
+# Video files will be saved in the working directory, within a folder named "mm/dd/YYYY-archives"
+Script will check to see if the folder already exists. If it doesn't, a new folder with the naming convention will be created.
+
 # Script Basics
 
 1. Checks if EagleEye username / password and API-key are present. If not present, script terminates.

@@ -5,6 +5,7 @@ import local_settings
 import datetime
 import smtplib
 import logging
+import os.path
 
 ###
 # Test Logging
@@ -180,6 +181,15 @@ def load_video_list_from_file(camera_id):
     with open(camera_id, "w") as file:
         video_list_read = file.read(json.loads(camera_id))
     return video_list_read
+
+# Check for folder to save the files, if doesn't exist, create new folder
+def check_directory_create():
+    
+
+
+
+
+
 
 ###
 # Step 5: Download the files from the video_list to the local directory
