@@ -24,14 +24,16 @@ contains username/password and API key needed to run the script. Credentials wil
 7. If any other HTTP Status Code is returned (error, etc.) the error is noted in the log and continues to the next file to download.
 
 # Additional Functionality (To-do)
-1. Add additional logging - create a file with list of camera_ids, video_files, etc. Create a log of files that aren't able to download due to HTTP Response Code Error
+1. Add logging module - transition print statements with log files. Should also try to incorporate:
+    1. File w/ list of camera_ids, video_files, etc.
+    2. Create log of video files that aren't able to download due to various errors.
 
-2. Notifications - create notification service, email XX user when script has:
+2. Notifications - create notification service (in addition to log files), email user when script has:
     1. Started / failed to start
     2. Completed / interrupted before completing
     3. Summary - # videos tried/succesful download
     4. Broad summary - snapshot of the script running every week, etc.
 
 3. Exception handling - when exceptions occur, handle automatically:
-    1. Restart if script fails/interrupted - check if video file already downloaded / pick up where left off
+    1. Restart if script fails or is interrupted - check if video file already downloaded / pick up where left off / don't download the same file more than once.
     2. Retry downloading video files that failed to download
