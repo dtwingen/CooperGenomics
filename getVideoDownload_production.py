@@ -5,7 +5,7 @@ import local_settings
 import datetime
 import smtplib
 import logging
-import os.path
+import os as os
 
 ###
 # Test Logging
@@ -55,6 +55,13 @@ noon_end = "115959.999"
 # Used for testing purposes, can be left when in production
 test_start = "120000.000"
 test_end = "130000.000"
+print("now = %s" % (now))
+print("yesterday = %s" % (yesterday))
+print("start_time = %s" % (start_time))
+print("end_time = %s" % (end_time))
+current_wd = os.getcwd()
+print(current_wd)
+print("above variables used for testing purposes only.")
 
 # Configured to fetch the video files from the previous 24 hour period, from noon to noon
 # start_timestamp = start_time + noon_start
@@ -183,13 +190,22 @@ def load_video_list_from_file(camera_id):
     return video_list_read
 
 # Check for folder to save the files, if doesn't exist, create new folder
-# def check_directory_create():
+def check_directory_create(current_wd,start_time):
+    archive_path = "%s/output/%s-archive" % (current_wd,start_time)
+    if not os.path.exists(archive_path):
+        os.mkdir(archive_path)
+        print("Creating new directory %s to save files downloaded from today." % (archive_path))
+        return archive_path
+    else:
+        print("Directory %s already exists... files downloaded today will be saved to this directory." % (archive_path))
+        return archive_path
+        
 
 ###
 # Step 5: Download the files from the video_list to the local directory
 ###
 
-def download_videos(camera_id,video_list):
+def download_videos(archive_path,camera_id,video_list):
     current_video = 0
     download_status = current_video + 1
        
@@ -208,9 +224,10 @@ def download_videos(camera_id,video_list):
 
         if response.status_code == 200:
             local_filename = "%s-%s.flv" % (camera_id, video_list[current_video]['e'])
+            local_path = "%s/%s" % (archive_path,local_filename)
             current_video += 1
             
-            with open(local_filename, 'wb') as f:
+            with open(local_path, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=1024):
                     if chunk:
                         print("Downloading %s" % local_filename)
@@ -233,6 +250,8 @@ print("Gathering list of videos to download for each camera...")
 
 session_list = {}
 
+download_path = check_directory_create(current_wd=current_wd,start_time=start_time)
+
 for camera_id in camera_id_list:
     video_list = get_video_list(camera_id)
     video_list_len = len(video_list)
@@ -247,5 +266,5 @@ print("%s of %s cameras have video files ready to download." % (camera_ids_with_
 
 for key in session_list:
     print("Initializing download of %s video files for camera %s" % (len(session_list[key]), key))
-    download_videos(key, session_list[key])
+    download_videos(download_path, key, session_list[key])
 
