@@ -138,7 +138,7 @@ response = session.request("GET", url, data=payload, headers=headers)
 print("Step 3 - Getting List of Devices: %s" % HTTP_STATUS_CODE[response.status_code])
 
 device_list = response.json()
-# print (device_list)
+print (device_list)
 
 # filter by camera ID
 camera_id_list = [i[1] for i in device_list if i[3] == 'camera']
@@ -156,6 +156,14 @@ print(merged_camera_list)
 # Total # of cameras in the environment
 camera_list_len = len(camera_id_list)
 print("Found %s cameras..." % camera_list_len)
+
+# Create file containing list of devices in the environment
+def save_device_list_to_file(merged_camera_list,start_time):
+    with open("device_list_%s.txt" % (start_time), "w") as file:
+        file.write(json.dumps(merged_camera_list))
+    print("device_list.txt has been saved to file.")
+
+save_device_list_to_file(merged_camera_list=merged_camera_list,start_time=start_time)
 
 ###
 # Step 4: Iterate through all of the cameras and video lists, which we'll use to download the files
@@ -178,11 +186,6 @@ def get_video_list(camera_id):
 ###
 # Use these functions to create files containing device_list, camera_id_list, video_list info.
 ###
-
-def save_device_list_to_file(device_list):
-    with open("device_list.txt", "w") as file:
-        file.write(json.dumps(device_list))
-    print("device_list.txt has been saved to file.")
 
 def save_camera_id_list_to_file(camera_id_list):
     with open("camera_id_list.txt", "w") as file:
