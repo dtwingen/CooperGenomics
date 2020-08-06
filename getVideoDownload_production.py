@@ -138,9 +138,20 @@ response = session.request("GET", url, data=payload, headers=headers)
 print("Step 3 - Getting List of Devices: %s" % HTTP_STATUS_CODE[response.status_code])
 
 device_list = response.json()
+# print (device_list)
 
-# filter everything but the cameras
+# filter by camera ID
 camera_id_list = [i[1] for i in device_list if i[3] == 'camera']
+# print(cameraID_list)
+
+friendly_id_list = [i[2] for i in device_list if i[3] == 'camera']
+print(friendly_id_list)
+
+# filter by camera friendly name
+merged_camera_list = [i+'_'+j for i,j in zip(camera_id_list,friendly_id_list)]
+''.join(merged_camera_list)
+print(merged_camera_list)
+
 
 # Total # of cameras in the environment
 camera_list_len = len(camera_id_list)
