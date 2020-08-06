@@ -183,13 +183,7 @@ def load_video_list_from_file(camera_id):
     return video_list_read
 
 # Check for folder to save the files, if doesn't exist, create new folder
-def check_directory_create():
-    
-
-
-
-
-
+# def check_directory_create():
 
 ###
 # Step 5: Download the files from the video_list to the local directory
