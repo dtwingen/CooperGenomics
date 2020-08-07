@@ -1,11 +1,19 @@
 import requests
 import json
 import sys
-import local_settings
 import datetime
-import smtplib
 import logging
 import os as os
+# import necessary packages for email notifications
+import smtplib
+# import template for email notification
+from string import Template
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+# import file containing api credentials
+import local_settings
+# import file containing smtp credentials
+import smtp_settings
 
 ###
 # Test Logging
@@ -28,10 +36,12 @@ session = requests.Session()
 username = ""
 password = ""
 api_key = ""
-email_user = ""
-email_password = ""
+smtp_host = ""
+smtp_port = ""
+smtp_email = ""
+smtp_password = ""
 
-if username == "" or password == "" or api_key == "" or email_user == "" or email_password == "":
+if username == "" or password == "" or api_key == "":
     
     # look to see if there are credentials in local_settings.py
     username = local_settings.username
@@ -41,6 +51,85 @@ if username == "" or password == "" or api_key == "" or email_user == "" or emai
     if username == "" or password == "" or api_key == "":
         print("Please put in your credentials")
         sys.exit()
+
+if smtp_host == "" or smtp_port == "" or smtp_email == "" or smtp_password == "":
+
+    # look to see if there are credentials in smtp_settings.py
+    smtp_host = smtp_settings.smtp_host
+    smtp_port = smtp_settings.smtp_port
+    smtp_email = smtp_settings.smtp_email
+    smtp_password = smtp_settings.smtp_password
+
+    if smtp_host == "" or smtp_port == "" or smtp_email == "" or smtp_password == "":
+        print("Please put in SMTP credentials for email notifications")
+        sys.exit()
+
+###
+# Set up the email notification service
+###
+
+def get_contacts(filename):
+    """
+    Return two lists names, emails containing names and email addresses
+    read from a file specified by filename.
+    """
+    
+    names = []
+    emails = []
+    with open(filename, mode='r', encoding='utf-8') as contacts_file:
+        for a_contact in contacts_file:
+            names.append(a_contact.split()[0])
+            emails.append(a_contact.split()[1])
+    return names, emails
+
+def read_template(filename):
+    """
+    Returns a Template object comprising the contents of the
+    file specified by filename.
+    """
+
+    with open(filename, 'r', encoding='utf-8') as template_file:
+        template_file_content = template_file.read()
+    return Template(template_file_content)
+
+# Read contacts
+def main():
+    names, emails = get_contacts('email_contacts.txt')
+    message_template = read_template('message.txt')
+    
+    # Set up the SMTP server
+    s = smtplib.SMTP(host='smtp.gmail.com', port=587)
+    s.starttls()
+    s.login(smtp_email, smtp_password)
+
+    # For each contact, send the email:
+    for name, email in zip(names, emails):
+        # Create a message
+        msg = MIMEMultipart()
+
+        # Add the actual person name to the message template
+        message = message_template.substitute(PERSON_NAME=name.title())
+
+        # Prints out the message body in the terminal
+        print(message)
+
+        # Setup the parameters of the message
+        msg['From']=smtp_email
+        msg['To']=email
+        msg['Subject']="This is a TEST"
+
+        # Add in the message body
+        msg.attach(MIMEText(message, 'plain'))
+
+        # Send the message via the server set up earlier
+        s.send_message(msg)
+        del msg
+
+    # Terminate the SMTP session and close the connection
+    s.quit()
+
+if __name__ == '__main__':
+    main()
 
 # Put in valid start time and endtime in EEN format.  
 # All times in our system are in the UTC timezone.
