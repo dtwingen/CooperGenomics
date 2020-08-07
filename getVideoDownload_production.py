@@ -16,16 +16,6 @@ import local_settings
 import smtp_settings
 
 ###
-# Test Logging
-###
-
-now = datetime.datetime.now()
-yesterday = now - datetime.timedelta(days = 1)
-
-print(now.strftime("%Y-%m-%d %H:%M:%S"))
-print("Starting process...")
-
-###
 # Setup Information
 ###
 
@@ -98,7 +88,7 @@ def main():
     message_template = read_template('message.txt')
     
     # Set up the SMTP server
-    s = smtplib.SMTP(host='smtp.gmail.com', port=587)
+    s = smtplib.SMTP(host=smtp_host, port=smtp_port)
     s.starttls()
     s.login(smtp_email, smtp_password)
 
@@ -128,37 +118,74 @@ def main():
     # Terminate the SMTP session and close the connection
     s.quit()
 
-if __name__ == '__main__':
-    main()
+"""
+Valid start time and end time must be in EEN format.  
 
-# Put in valid start time and endtime in EEN format.  
-# All times in our system are in the UTC timezone.
-# For example, November 21, 2018 01:23:45 AM would translate to 20181121012345.000
-# (the last three digits are for microseconds)
+All times in the EEN system use the UTC timezone.
 
+For example, November 21, 2018 01:23:45 AM would translate to 20181121012345.000
+
+The last 3 digits are for microseconds and are required.
+"""
+
+# Required datetime variables
+now = datetime.datetime.now()
+yesterday = now - datetime.timedelta(days = 1)
+yesterday_friendly = yesterday.strftime("%m/%d/%Y")
 start_time = yesterday.strftime("%Y%m%d")
 end_time = yesterday.strftime("%Y%m%d")
-noon_start = "120000.000"
-noon_end = "115959.999"
 
-# Used for testing purposes, can be left when in production
-test_start = "120000.000"
-test_end = "130000.000"
+print(now.strftime("%Y-%m-%d %H:%M:%S"))
+print("Cooper Surgical - camera footage archives")
+print("Starting process...")
+
+# Print statements used for testing purposes only, can be removed once in production
+"""
 print("now = %s" % (now))
 print("yesterday = %s" % (yesterday))
 print("start_time = %s" % (start_time))
 print("end_time = %s" % (end_time))
-current_wd = os.getcwd()
-print(current_wd)
 print("above variables used for testing purposes only.")
+"""
 
-# Configured to fetch the video files from the previous 24 hour period, from noon to noon
-# start_timestamp = start_time + noon_start
-# end_timestamp =   end_time + noon_end
+# Working directory - python script location
+current_wd = os.getcwd()
+print("The current working directory is %s" % (current_wd))
 
 ###
-# Comment out the above start_timestamp and end_timestamp and instead uncomment the ones below when testing
+# UNCOMMENT BELOW SECTION AND REPLACE TESTING SECTION WHEN IN PRODUCTION
 ###
+
+# start_timestamp and end_timestamp below are values to be used in production - 24 hour fetch period
+"""
+noon_start = "120000.000"
+noon_end = "115959.999"
+
+start_timestamp = start_time + noon_start
+end_timestamp =   end_time + noon_end
+noon_end_friendly = "12:00 UTC"
+end_noon_friendly = "11:59 UTC"
+start_friendly = ("%s %s" % (yesterday_friendly, noon_friendly))
+end_friendly = ("%s %s" % (yesterday_friendly, noon_end_friendly))
+
+if start_timestamp == "" or end_timestamp == "":
+    print("Please put in a start and ending time")
+    sys.exit()
+
+print("Fetching video files captured between %s and %s..." % (start_friendly, end_friendly))
+"""
+###
+# END PRODUCTION SECTION
+###
+
+###
+# THIS SECTION TO BE USED FOR TESTING PURPOSES ONLY
+###
+
+test_start = "120000.000"
+test_end = "130000.000"
+test_start_friendly = "12:00 UTC"
+test_end_friendly = "13:00 UTC" 
 
 start_timestamp = start_time + test_start
 end_timestamp = end_time + test_end
@@ -167,7 +194,11 @@ if start_timestamp == "" or end_timestamp == "":
     print("Please put in a start and ending time")
     sys.exit()
 
-# print("Fetching video files from yesterday, " + start_time)
+print("Fetching video files captured on %s between %s and %s" % (yesterday_friendly, test_start_friendly, test_end_friendly))
+
+###
+# END TESTING SECTION - COMMENT/REMOVE THIS ENTIRE SECTION WHEN IN PRODUCTION
+###
 
 # Translating the HTTP response codes to make the status messages easier to read
 HTTP_STATUS_CODE = { 
@@ -227,38 +258,33 @@ response = session.request("GET", url, data=payload, headers=headers)
 print("Step 3 - Getting List of Devices: %s" % HTTP_STATUS_CODE[response.status_code])
 
 device_list = response.json()
-print (device_list)
 
 # filter by camera ID
 camera_id_list = [i[1] for i in device_list if i[3] == 'camera']
-# print(cameraID_list)
 
+# filter by friendly camera name
 friendly_id_list = [i[2] for i in device_list if i[3] == 'camera']
-print(friendly_id_list)
 
-# filter by camera friendly name
+# create merged list with camera ID and friendly camera name
 merged_camera_list = [i+'_'+j for i,j in zip(camera_id_list,friendly_id_list)]
 ''.join(merged_camera_list)
-print(merged_camera_list)
 
-
-# Total # of cameras in the environment
+# count of cameras found in the environment
 camera_list_len = len(camera_id_list)
 print("Found %s cameras..." % camera_list_len)
 
-# Create file containing list of devices in the environment
-def save_device_list_to_file(merged_camera_list,start_time):
-    with open("device_list_%s.txt" % (start_time), "w") as file:
-        file.write(json.dumps(merged_camera_list))
-    print("device_list.txt has been saved to file.")
+# Check if directory exists to save video files
+def check_directory_create(current_wd,start_time):
+    archive_path = "%s/output/%s-archive" % (current_wd,start_time)
+    if not os.path.exists(archive_path):
+        os.mkdir(archive_path)
+        print("Creating new directory %s to save files downloaded from today." % (archive_path))
+        return archive_path
+    else:
+        print("Directory %s already exists... files downloaded today will be saved to this directory." % (archive_path))
+        return archive_path
 
-save_device_list_to_file(merged_camera_list=merged_camera_list,start_time=start_time)
-
-###
-# Step 4: Iterate through all of the cameras and video lists, which we'll use to download the files
-#         to the local directory in the next step.
-###
-
+# Given a specific camera_id, fetch a list of video files.
 def get_video_list(camera_id):
     url = "https://login.eagleeyenetworks.com/asset/list/video.flv"
         
@@ -273,36 +299,68 @@ def get_video_list(camera_id):
     return video_list
 
 ###
-# Use these functions to create files containing device_list, camera_id_list, video_list info.
+# Step 4: Fetch video files to download for each camera
 ###
 
-def save_camera_id_list_to_file(camera_id_list):
-    with open("camera_id_list.txt", "w") as file:
-        for i in camera_id_list:
-            file.write("%s\n" % i)
+print("Step 4: Gathering list of videos to download for each camera...")
 
+session_list = {}
+session_list_large = {}
+
+download_path = check_directory_create(current_wd=current_wd,start_time=start_time)
+
+for camera_id in camera_id_list:
+    video_list = get_video_list(camera_id)
+    video_list_len = len(video_list)
+    if video_list_len > 1:
+        print("Found %s videos to download for camera %s" % (video_list_len, camera_id))
+        session_list[camera_id] = video_list
+    elif video_list_len == 1:
+        print("Found a large video file for camera %s... Skipping for now and will download at the end." % (camera_id))
+        with open("large_video_list.txt", "w") as file:
+            file.write(json.dumps(video_list))
+        session_list_large[camera_id] = video_list
+    else:
+        print("No videos found for camera %s. Skipping..." % camera_id)
+
+
+
+camera_ids_with_files = len(session_list)
+print("%s of %s cameras have video files ready to download." % (camera_ids_with_files, camera_list_len))
+
+###
+# Use functions below to create required directories and files
+###
+
+# Create file containing list of devices in the environment
+"""
+def save_device_list_to_file(merged_camera_list,start_time):
+    with open("device_list_%s.txt" % (start_time), "w") as file:
+        file.write(json.dumps(merged_camera_list))
+    print("device_list_%s.txt has been saved to file." % (start_time))
+
+save_device_list_to_file(merged_camera_list=merged_camera_list,start_time=start_time)
+"""
+
+# Save video_list from get_video_list() to .txt file
+"""
 def save_video_list_to_file(video_list):
     with open("video_list", "w") as file:
         file.write(json.dumps(video_list))
     print("video_list saved as new file: 'video_list'.")
 
-# Use the function below to recall the stored video list
+save_video_list_to_file(get_video_list(camera_id=""))
+"""
+
+# Recall video_list stored in .txt file
+"""
 def load_video_list_from_file(camera_id):
     with open(camera_id, "w") as file:
         video_list_read = file.read(json.loads(camera_id))
     return video_list_read
 
-# Check for folder to save the files, if doesn't exist, create new folder
-def check_directory_create(current_wd,start_time):
-    archive_path = "%s/output/%s-archive" % (current_wd,start_time)
-    if not os.path.exists(archive_path):
-        os.mkdir(archive_path)
-        print("Creating new directory %s to save files downloaded from today." % (archive_path))
-        return archive_path
-    else:
-        print("Directory %s already exists... files downloaded today will be saved to this directory." % (archive_path))
-        return archive_path
-        
+load_video_list_from_file(camera_id="")
+"""
 
 ###
 # Step 5: Download the files from the video_list to the local directory
@@ -344,30 +402,23 @@ def download_videos(archive_path,camera_id,video_list):
     else:
         print("Finished downloading videos for camera_id %s ..." % camera_id)
 
-
-###
-# Step 6: Initiate the script
-###
-
-print("Gathering list of videos to download for each camera...")
-
-session_list = {}
-
-download_path = check_directory_create(current_wd=current_wd,start_time=start_time)
-
-for camera_id in camera_id_list:
-    video_list = get_video_list(camera_id)
-    video_list_len = len(video_list)
-    if video_list_len > 0:
-        print("Found %s videos to download for camera %s" % (video_list_len, camera_id))
-        session_list[camera_id] = video_list
-    else:
-        print("No videos found for camera %s. Skipping..." % camera_id)
-
-camera_ids_with_files = len(session_list)
-print("%s of %s cameras have video files ready to download." % (camera_ids_with_files, camera_list_len))
+print("Step 5: Download video files to working directory")
 
 for key in session_list:
     print("Initializing download of %s video files for camera %s" % (len(session_list[key]), key))
     download_videos(download_path, key, session_list[key])
+
+###
+# Trigger email notifications and activity summary here...
+###
+
+# Test email notification used as temporary placeholder
+if __name__ == '__main__':
+    main()
+
+print("Email notification service initiated...")
+print("All emails have been sent successfully.")
+
+print("Downloads complete - exiting process...")
+sys.exit()
 
