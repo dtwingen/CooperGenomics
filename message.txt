@@ -1,3 +1,5 @@
+// message template for email notification service
+// PERSON_NAME pulled from email_contacts.txt file
 Dear ${PERSON_NAME},
 
 This is a test message.
