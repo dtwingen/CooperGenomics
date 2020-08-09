@@ -3,7 +3,8 @@ import json
 import sys
 import datetime
 import logging
-import os as os
+import os
+from os import path
 # import necessary packages for email notifications
 import smtplib
 # import template for email notification
@@ -18,6 +19,22 @@ import smtp_settings
 ###
 # Setup Information
 ###
+
+# get parent directory PATH
+script_path = "getVideoDownload_production.py"
+parent_dir = os.path.dirname(script_path)
+parent_dir_absolute = os.path.abspath(os.path.dirname(parent_dir))
+print("The parent directory for the currently running script is %s" % parent_dir_absolute)
+
+# verify required directories exist
+output_directory = os.path("%s/output" % parent_dir_absolute)
+
+print("Checking for required directory paths...")
+if not os.path.exists(output_directory):
+    os.mkdir(output_directory)
+    print("created OUTPUT directory - %s" (output_directory))
+else:
+    print("OK")
 
 # automatically manage cookies between requests
 session = requests.Session()
@@ -149,7 +166,7 @@ print("above variables used for testing purposes only.")
 """
 
 # Working directory - python script location
-current_wd = os.getcwd()
+current_wd = parent_dir_absolute
 print("The current working directory is %s" % (current_wd))
 
 ###
