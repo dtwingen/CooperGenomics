@@ -4,9 +4,6 @@ CooperGenomics.code-workspace
 local_settings.py
 output
 .DS_Store
-credentials
-README.md
 smtp_settings.py
 email_contacts.txt
-device_list_20200806.txt
 large_video_list.txt
