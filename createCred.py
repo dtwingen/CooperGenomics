@@ -114,8 +114,8 @@ def main():
 	print("Cred file created successfully at {}"
 	.format(time.ctime())) 
 
-	if not(creds.expiry_time == -1): 
-		os.startfile('expire.py') 
+	if not(creds.expiry_time == -1):
+		os.system('expire.py')
 
 
 	print("**"*20) 
