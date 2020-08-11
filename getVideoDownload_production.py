@@ -14,30 +14,33 @@ from email.mime.text import MIMEText
 import local_settings
 # import file containing smtp credentials
 import smtp_settings
+# import progress bar module
+from clint.textui import progress
 
 ###
 # Setup Information
 ###
 
-# get parent directory PATH
+# get directory PATHs
 parent_dir = os.path
+current_wd = os.getcwd()
 script_path = "getVideoDownload_production.py"
 print("The parent directory for the currently running script is %s" % parent_dir)
-
+print("The current working directory is %s" % current_wd)
 
 # verify required directories exist
-output_path = "output"
-output_directory = "%s/output" % parent_dir
-print (output_directory)
+parent_output_dir = "%s\\output" % (parent_dir)
+working_output_dir = "%s\\output" % (current_wd)
+print(parent_output_dir)
+print(working_output_dir)
 
-"""
 print("Checking for required directory paths...")
-if not os.path.exists(output_directory):
-    os.mkdir(output_directory)
-    print("created OUTPUT directory - %s" (output_directory))
+output_dir = os.path.abspath("output")
+if not os.path.exists(output_dir):
+    os.mkdir(output_dir)
+    print("created OUTPUT directory - %s" % output_dir)
 else:
     print("OK")
-"""
 
 # automatically manage cookies between requests
 session = requests.Session()
@@ -168,10 +171,6 @@ print("end_time = %s" % (end_time))
 print("above variables used for testing purposes only.")
 """
 
-# Working directory - python script location
-current_wd = os.getcwd()
-print("The current working directory is %s" % (current_wd))
-
 ###
 # UNCOMMENT BELOW SECTION AND REPLACE TESTING SECTION WHEN IN PRODUCTION
 ###
@@ -288,6 +287,7 @@ friendly_id_list = [i[2] for i in device_list if i[3] == 'camera']
 # create merged list with camera ID and friendly camera name
 merged_camera_list = [i+'_'+j for i,j in zip(camera_id_list,friendly_id_list)]
 ''.join(merged_camera_list)
+print(merged_camera_list)
 
 # count of cameras found in the environment
 camera_list_len = len(camera_id_list)
@@ -295,14 +295,16 @@ print("Found %s cameras..." % camera_list_len)
 
 # Check if directory exists to save video files
 def check_directory_create(current_wd,start_time):
-    archive_path = "%s/output/%s-archive" % (current_wd,start_time)
-    if os.path.exists(archive_path):
-        os.mkdir(archive_path)
-        print("Creating new directory %s to save files downloaded from today." % (archive_path))
-        return archive_path
+    archive_dir = os.path.abspath("\%s-archive" % (start_time))
+    if os.path.exists(archive_dir):
+        os.mkdir(archive_dir)
+        print("Creating new directory %s to save files downloaded from today." % (archive_dir))
+        return archive_dir
     else:
-        print("Directory %s already exists... files downloaded today will be saved to this directory." % (archive_path))
-        return archive_path
+        print("Directory %s already exists... files downloaded today will be saved to this directory." % (archive_dir))
+        return archive_dir
+
+check_directory_create(current_wd, start_time)
 
 # Given a specific camera_id, fetch a list of video files.
 def get_video_list(camera_id):
@@ -327,7 +329,23 @@ print("Step 4: Gathering list of videos to download for each camera...")
 session_list = {}
 session_list_large = {}
 
-download_path = check_directory_create(current_wd=current_wd,start_time=start_time)
+download_path = check_directory_create(current_wd,start_time)
+
+# Create text file that lists the camera_ids with videos to download for this session, and the number of video files available to download.
+def session_download_list(start_time, camera_id, video_list):
+    video_list_len = len(video_list)
+    if video_list_len > 1:
+        add_to_file = "%s: found %s video files to download during this session/n" % (camera_id, video_list_len)
+        with open ("download_list_%s.txt" % (start_time), "w") as file:
+            file.writelines(add_to_file)
+    elif video_list_len == 1:
+        add_to_file = "%s: found %s video files to download during this session/n" % (camera_id, video_list_len)
+        with open ("download_list_%s.txt" % (start_time), "w") as file:
+            file.writelines(add_to_file)
+        with open ("large_file_download_list_%s.txt" % (start_time), "w") as file:
+            file.writelines("%s: %s/n" % video_list)
+    else:
+        print("skipping %s... no files to download" % camera_id)
 
 for camera_id in camera_id_list:
     video_list = get_video_list(camera_id)
@@ -338,12 +356,11 @@ for camera_id in camera_id_list:
     elif video_list_len == 1:
         print("Found a large video file for camera %s... Skipping for now and will download at the end." % (camera_id))
         with open("large_video_list.txt", "w") as file:
-            file.write(json.dumps(video_list))
+            large_file_log = json.dumps(video_list)
+            file.write("%s/n" % large_file_log)
         session_list_large[camera_id] = video_list
     else:
         print("No videos found for camera %s. Skipping..." % camera_id)
-
-
 
 camera_ids_with_files = len(session_list)
 print("%s of %s cameras have video files ready to download." % (camera_ids_with_files, camera_list_len))
@@ -405,14 +422,15 @@ def download_videos(archive_path,camera_id,video_list):
 
         if response.status_code == 200:
             local_filename = "%s-%s.flv" % (camera_id, video_list[current_video]['e'])
-            local_path = "%s/%s" % (archive_path,local_filename)
+            local_path = ("%s\%s" % (output_dir, local_filename))
             current_video += 1
             
-            with open(local_path, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=1024):
+            with open(local_path, "wb") as f:
+                total_length = int(response.headers.get('content-length'))
+                for chunk in progress.bar(response.iter_content(chunk_size=1024), expected_size=(total_length/1024) + 1):
                     if chunk:
-                        print("Downloading %s" % local_filename)
                         f.write(chunk)
+                        f.flush()
                     else:
                         print("error downloading last file...")
                         continue
