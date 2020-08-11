@@ -16,6 +16,9 @@ import local_settings
 import smtp_settings
 # import progress bar module
 from clint.textui import progress
+# import aws module for sending files to S3 bucket
+import boto3
+from botocore.exceptions import ClientError
 
 ###
 # Setup Information
@@ -403,6 +406,32 @@ load_video_list_from_file(camera_id="")
 # Step 5: Download the files from the video_list to the local directory
 ###
 
+###
+# Step 5a. TEST: Download and send files to Cooper S3 bucket
+###
+
+def upload_to_aws(file_name, bucket=local_settings.bucket, object_name=None):
+    """Upload a file to an S3 bucket
+
+    :param file_name: File to upload
+    :param bucket: Bucket to upload to
+    :param object_name: S3 object name. If not specified then file_name is used
+    :return: True if file was uploaded, else False
+    """
+
+    # If S3 object_name was not specified, use file_name
+    if object_name is None:
+        object_name = file_name
+
+    # Upload the file
+    s3_client = boto3.client('s3')
+    try:
+        response = s3_client.upload_file(file_name, bucket, object_name)
+    except ClientError as e:
+        logging.error(e)
+        return False
+    return True
+
 def download_videos(archive_path,camera_id,video_list):
     current_video = 0
     download_status = current_video + 1
@@ -434,6 +463,8 @@ def download_videos(archive_path,camera_id,video_list):
                     else:
                         print("error downloading last file...")
                         continue
+            if upload_to_aws(local_path,bucket=local_settings.bucket) == True:
+                print("%s has been uploaded to the S3 bucket successfully" % local_filename)
         else:
             print("HTTP Status Code: %s" % HTTP_STATUS_CODE[response.status_code])
             continue
@@ -445,6 +476,8 @@ print("Step 5: Download video files to working directory")
 for key in session_list:
     print("Initializing download of %s video files for camera %s" % (len(session_list[key]), key))
     download_videos(download_path, key, session_list[key])
+
+
 
 ###
 # Trigger email notifications and activity summary here...
