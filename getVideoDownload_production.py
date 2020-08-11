@@ -4,7 +4,6 @@ import sys
 import datetime
 import logging
 import os
-from os import path
 # import necessary packages for email notifications
 import smtplib
 # import template for email notification
@@ -21,20 +20,24 @@ import smtp_settings
 ###
 
 # get parent directory PATH
+parent_dir = os.path
 script_path = "getVideoDownload_production.py"
-parent_dir = os.path.dirname(script_path)
-parent_dir_absolute = os.path.abspath(os.path.dirname(parent_dir))
-print("The parent directory for the currently running script is %s" % parent_dir_absolute)
+print("The parent directory for the currently running script is %s" % parent_dir)
+
 
 # verify required directories exist
-output_directory = os.path("%s/output" % parent_dir_absolute)
+output_path = "output"
+output_directory = "%s/output" % parent_dir
+print (output_directory)
 
+"""
 print("Checking for required directory paths...")
 if not os.path.exists(output_directory):
     os.mkdir(output_directory)
     print("created OUTPUT directory - %s" (output_directory))
 else:
     print("OK")
+"""
 
 # automatically manage cookies between requests
 session = requests.Session()
@@ -166,7 +169,7 @@ print("above variables used for testing purposes only.")
 """
 
 # Working directory - python script location
-current_wd = parent_dir_absolute
+current_wd = os.getcwd()
 print("The current working directory is %s" % (current_wd))
 
 ###
@@ -293,7 +296,7 @@ print("Found %s cameras..." % camera_list_len)
 # Check if directory exists to save video files
 def check_directory_create(current_wd,start_time):
     archive_path = "%s/output/%s-archive" % (current_wd,start_time)
-    if not os.path.exists(archive_path):
+    if os.path.exists(archive_path):
         os.mkdir(archive_path)
         print("Creating new directory %s to save files downloaded from today." % (archive_path))
         return archive_path
