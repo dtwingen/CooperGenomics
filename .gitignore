@@ -1,6 +1,7 @@
 __pycache__
 CooperGenomics.code-workspace
 .vscode/launch.json
+.vscode/settings.json
 local_settings.py
 output
 .DS_Store
