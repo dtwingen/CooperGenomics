@@ -337,16 +337,17 @@ download_path = check_directory_create(current_wd,start_time)
 # Create text file that lists the camera_ids with videos to download for this session, and the number of video files available to download.
 def session_download_list(start_time, camera_id, video_list):
     video_list_len = len(video_list)
-    if video_list_len > 1:
+    if video_list_len >= 1:
         add_to_file = "%s: found %s video files to download during this session/n" % (camera_id, video_list_len)
         with open ("download_list_%s.txt" % (start_time), "w") as file:
             file.writelines(add_to_file)
-    elif video_list_len == 1:
-        add_to_file = "%s: found %s video files to download during this session/n" % (camera_id, video_list_len)
-        with open ("download_list_%s.txt" % (start_time), "w") as file:
-            file.writelines(add_to_file)
-        with open ("large_file_download_list_%s.txt" % (start_time), "w") as file:
-            file.writelines("%s: %s/n" % video_list)
+    
+    # elif video_list_len == 1:
+        # add_to_file = "%s: found %s video files to download during this session/n" % (camera_id, video_list_len)
+        # with open ("download_list_%s.txt" % (start_time), "w") as file:
+            # file.writelines(add_to_file)
+        # with open ("large_file_download_list_%s.txt" % (start_time), "w") as file:
+            # file.writelines("%s: %s/n" % video_list)
     else:
         print("skipping %s... no files to download" % camera_id)
 
