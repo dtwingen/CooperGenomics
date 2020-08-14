@@ -68,7 +68,7 @@ if username == "" or password == "" or api_key == "":
         print("Please put in your credentials")
         sys.exit()
 
-if smtp_host == "" or smtp_port == "" or smtp_email == "" or smtp_password == "":
+if smtp_host == "" or smtp_port == "" or smtp_email == "": # or smtp_password == "":
 
     # look to see if there are credentials in smtp_settings.py
     smtp_host = smtp_settings.smtp_host
@@ -466,6 +466,11 @@ def download_videos(archive_path,camera_id,video_list):
                         continue
             if upload_to_aws(local_path,bucket=local_settings.bucket) == True:
                 print("%s has been uploaded to the S3 bucket successfully" % local_filename)
+            else:
+                S3_errors = "%s-errors.txt" % start_time
+                with open(S3_errors, "w") as errors:
+                    errors.write("%s/n" % local_path)
+                    print("error_logged")
         else:
             print("HTTP Status Code: %s" % HTTP_STATUS_CODE[response.status_code])
             continue
