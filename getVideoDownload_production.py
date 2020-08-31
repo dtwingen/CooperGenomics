@@ -145,7 +145,7 @@ if smtp_host == "" or smtp_port == "" or smtp_email == "": # or smtp_password ==
     smtp_email = smtp_settings.smtp_email
     smtp_password = smtp_settings.smtp_password
 
-    if smtp_host == "" or smtp_port == "" or smtp_email == "" or smtp_password == "":
+    if smtp_host == "" or smtp_port == "" or smtp_email == "": #or smtp_password == "":
         print("Please put in SMTP credentials for email notifications")
         sys.exit()
 
