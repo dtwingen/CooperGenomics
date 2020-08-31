@@ -3,6 +3,7 @@ import json
 import sys
 import datetime
 import logging
+import logging.handlers
 import os
 # import necessary packages for email notifications
 import smtplib
@@ -475,11 +476,23 @@ def download_videos(archive_path,camera_id,video_list):
 
 print("Step 5: Download video files to working directory")
 
-for key in session_list:
-    print("Initializing download of %s video files for camera %s" % (len(session_list[key]), key))
-    download_videos(download_path, key, session_list[key])
 
 
+smtp_handler = logging.handlers.SMTPHandler(mailhost=("smtp-mail.outlook.com", 587),
+                                            fromaddr="dan@reitechnology.com", 
+                                            toaddrs="support@reitechnology.com",
+                                            subject=u"AppName error!")
+
+
+logger = logging.getLogger()
+logger.addHandler(smtp_handler)
+
+try:
+    for key in session_list:
+        print("Initializing download of %s video files for camera %s" % (len(session_list[key]), key))
+        download_videos(download_path, key, session_list[key])
+except Exception as e:
+    logger.exception('Unhandled Exception')
 
 ###
 # Trigger email notifications and activity summary here...
