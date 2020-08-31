@@ -20,6 +20,74 @@ from clint.textui import progress
 import boto3
 from botocore.exceptions import ClientError
 
+# Valid start time and end time must be in EEN format.  
+
+# All times in the EEN system use the UTC timezone.
+
+# For example, November 21, 2018 01:23:45 AM would translate to 20181121012345.000
+
+# The last 3 digits are for microseconds and are required.
+
+
+# Required datetime variables
+now = datetime.datetime.now()
+now_friendly = now.strftime("%m%d%Y")
+yesterday = now - datetime.timedelta(days = 1)
+yesterday_friendly = yesterday.strftime("%m%d%Y")
+start_time = yesterday.strftime("%Y%m%d")
+end_time = now.strftime("%Y%m%d")
+
+# (now.strftime("%Y-%m-%d %H:%M:%S"))
+
+
+###
+# UNCOMMENT BELOW SECTION AND REPLACE TESTING SECTION WHEN IN PRODUCTION
+###
+
+# start_timestamp and end_timestamp below are values to be used in production - 24 hour fetch period
+
+noon_start = "120000.000"
+noon_end = "115959.999"
+
+start_timestamp = start_time + noon_start
+end_timestamp =   end_time + noon_end
+noon_friendly = "12:00 UTC"
+end_noon_friendly = "11:59 UTC"
+start_friendly = ("%s %s" % (yesterday_friendly, noon_friendly))
+end_friendly = ("%s %s" % (now_friendly, end_noon_friendly))
+
+if start_timestamp == "" or end_timestamp == "":
+    print("Please put in a start and ending time")
+    sys.exit()
+
+print("Fetching video files captured between %s and %s..." % (start_friendly, end_friendly))
+
+###
+# END PRODUCTION SECTION
+###
+
+###
+# THIS SECTION TO BE USED FOR TESTING PURPOSES ONLY
+###
+"""
+test_start = "120000.000"
+test_end = "130000.000"
+test_start_friendly = "12:00 UTC"
+test_end_friendly = "13:00 UTC" 
+
+start_timestamp = start_time + test_start
+end_timestamp = end_time + test_end
+
+if start_timestamp == "" or end_timestamp == "":
+    logging.ERROR("Please put in a start and ending time")
+    sys.exit()
+
+# print("Fetching video files captured on %s between %s and %s" % (yesterday_friendly, test_start_friendly, test_end_friendly))
+"""
+###
+# END TESTING SECTION - COMMENT/REMOVE THIS ENTIRE SECTION WHEN IN PRODUCTION
+###
+
 ###
 # Setup Information
 ###
@@ -137,90 +205,36 @@ def main():
         # Add in the message body
         msg.attach(MIMEText(message, 'plain'))
 
+        filename_1 = "large_video_list.txt"
+        # Open PDF file in binary mode
+
+        # We assume that the file is in the directory where you run your Python script from
+        with open(filename_1, "rb") as attachment:
+    
+        # The content type "application/octet-stream" means that a MIME attachment is a binary file
+            part = MIMEBase("application", "octet-stream")
+        part.set_payload(attachment.read())
+
+        # Encode to base64
+        encoders.encode_base64(part)
+
+        # Add header 
+        part.add_header(
+            "Content-Disposition",
+            f"attachment; filename= {filename_1}",
+        )
+
+        # Add attachment to your message and convert it to string
+        message.attach(part)
+        text = message.as_string()
+
+
         # Send the message via the server set up earlier
         s.send_message(msg)
         del msg
 
     # Terminate the SMTP session and close the connection
     s.quit()
-
-"""
-Valid start time and end time must be in EEN format.  
-
-All times in the EEN system use the UTC timezone.
-
-For example, November 21, 2018 01:23:45 AM would translate to 20181121012345.000
-
-The last 3 digits are for microseconds and are required.
-"""
-
-# Required datetime variables
-now = datetime.datetime.now()
-yesterday = now - datetime.timedelta(days = 1)
-yesterday_friendly = yesterday.strftime("%m/%d/%Y")
-start_time = yesterday.strftime("%Y%m%d")
-end_time = yesterday.strftime("%Y%m%d")
-
-print(now.strftime("%Y-%m-%d %H:%M:%S"))
-print("Cooper Surgical - camera footage archives")
-print("Starting process...")
-
-# Print statements used for testing purposes only, can be removed once in production
-"""
-print("now = %s" % (now))
-print("yesterday = %s" % (yesterday))
-print("start_time = %s" % (start_time))
-print("end_time = %s" % (end_time))
-print("above variables used for testing purposes only.")
-"""
-
-###
-# UNCOMMENT BELOW SECTION AND REPLACE TESTING SECTION WHEN IN PRODUCTION
-###
-
-# start_timestamp and end_timestamp below are values to be used in production - 24 hour fetch period
-"""
-noon_start = "120000.000"
-noon_end = "115959.999"
-
-start_timestamp = start_time + noon_start
-end_timestamp =   end_time + noon_end
-noon_end_friendly = "12:00 UTC"
-end_noon_friendly = "11:59 UTC"
-start_friendly = ("%s %s" % (yesterday_friendly, noon_friendly))
-end_friendly = ("%s %s" % (yesterday_friendly, noon_end_friendly))
-
-if start_timestamp == "" or end_timestamp == "":
-    print("Please put in a start and ending time")
-    sys.exit()
-
-print("Fetching video files captured between %s and %s..." % (start_friendly, end_friendly))
-"""
-###
-# END PRODUCTION SECTION
-###
-
-###
-# THIS SECTION TO BE USED FOR TESTING PURPOSES ONLY
-###
-
-test_start = "120000.000"
-test_end = "130000.000"
-test_start_friendly = "12:00 UTC"
-test_end_friendly = "13:00 UTC" 
-
-start_timestamp = start_time + test_start
-end_timestamp = end_time + test_end
-
-if start_timestamp == "" or end_timestamp == "":
-    print("Please put in a start and ending time")
-    sys.exit()
-
-print("Fetching video files captured on %s between %s and %s" % (yesterday_friendly, test_start_friendly, test_end_friendly))
-
-###
-# END TESTING SECTION - COMMENT/REMOVE THIS ENTIRE SECTION WHEN IN PRODUCTION
-###
 
 # Translating the HTTP response codes to make the status messages easier to read
 HTTP_STATUS_CODE = { 
@@ -299,7 +313,7 @@ print("Found %s cameras..." % camera_list_len)
 # Check if directory exists to save video files
 def check_directory_create(current_wd,start_time):
     archive_dir = os.path.abspath("\%s-archive" % (start_time))
-    if os.path.exists(archive_dir):
+    if not os.path.exists(archive_dir):
         os.mkdir(archive_dir)
         print("Creating new directory %s to save files downloaded from today." % (archive_dir))
         return archive_dir
@@ -334,35 +348,12 @@ session_list_large = {}
 
 download_path = check_directory_create(current_wd,start_time)
 
-# Create text file that lists the camera_ids with videos to download for this session, and the number of video files available to download.
-def session_download_list(start_time, camera_id, video_list):
-    video_list_len = len(video_list)
-    if video_list_len >= 1:
-        add_to_file = "%s: found %s video files to download during this session/n" % (camera_id, video_list_len)
-        with open ("download_list_%s.txt" % (start_time), "w") as file:
-            file.writelines(add_to_file)
-    
-    # elif video_list_len == 1:
-        # add_to_file = "%s: found %s video files to download during this session/n" % (camera_id, video_list_len)
-        # with open ("download_list_%s.txt" % (start_time), "w") as file:
-            # file.writelines(add_to_file)
-        # with open ("large_file_download_list_%s.txt" % (start_time), "w") as file:
-            # file.writelines("%s: %s/n" % video_list)
-    else:
-        print("skipping %s... no files to download" % camera_id)
-
 for camera_id in camera_id_list:
     video_list = get_video_list(camera_id)
     video_list_len = len(video_list)
     if video_list_len > 1:
         print("Found %s videos to download for camera %s" % (video_list_len, camera_id))
         session_list[camera_id] = video_list
-    elif video_list_len == 1:
-        print("Found a large video file for camera %s... Skipping for now and will download at the end." % (camera_id))
-        with open("large_video_list.txt", "w") as file:
-            large_file_log = json.dumps(video_list)
-            file.write("%s/n" % large_file_log)
-        session_list_large[camera_id] = video_list
     else:
         print("No videos found for camera %s. Skipping..." % camera_id)
 
@@ -447,8 +438,10 @@ def download_videos(archive_path,camera_id,video_list):
         payload = ""
         headers = {'authorization': api_key}
 
-        response = session.request("GET", url, data=payload, params=querystring, headers=headers)
+        response = session.request("GET", url, data=payload, params=querystring, headers=headers, stream=True)
+        response.raise_for_status()
         print(HTTP_STATUS_CODE[response.status_code])
+
 
         if response.status_code == 200:
             local_filename = "%s-%s.flv" % (camera_id, video_list[current_video]['e'])
@@ -457,20 +450,23 @@ def download_videos(archive_path,camera_id,video_list):
             
             with open(local_path, "wb") as f:
                 total_length = int(response.headers.get('content-length'))
-                for chunk in progress.bar(response.iter_content(chunk_size=1024), expected_size=(total_length/1024) + 1):
+                for chunk in progress.bar(response.iter_content(chunk_size=8192), expected_size=(total_length/8192) + 1):
                     if chunk:
                         f.write(chunk)
-                        f.flush()
+                        # f.flush()
+                        with open("%s_%s_output.txt" % (yesterday_friendly, now_friendly), "w") as file:
+                            file.write("%s/%s \n" % (output_dir, local_filename))
                     else:
-                        print("error downloading last file...")
-                        continue
+                        print("error downloading last file...")    
+                        
             if upload_to_aws(local_path,bucket=local_settings.bucket) == True:
                 print("%s has been uploaded to the S3 bucket successfully" % local_filename)
             else:
                 S3_errors = "%s-errors.txt" % start_time
                 with open(S3_errors, "w") as errors:
-                    errors.write("%s/n" % local_path)
-                    print("error_logged")
+                    errors.write("%s \n" % local_path)
+                    print("error_logged")            
+                    
         else:
             print("HTTP Status Code: %s" % HTTP_STATUS_CODE[response.status_code])
             continue

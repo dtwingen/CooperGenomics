@@ -8,3 +8,4 @@ output
 smtp_settings.py
 email_contacts.txt
 large_video_list.txt
+debug.log

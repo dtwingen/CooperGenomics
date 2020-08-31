@@ -2,7 +2,5 @@
 // PERSON_NAME pulled from email_contacts.txt file
 Dear ${PERSON_NAME},
 
-This is a test message.
-Have a great weekend!
+This message is to confirm that today's download process has completed successfully. Please check the logs for more information.
 
-Yours Truly
