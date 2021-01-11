@@ -1,0 +1,11 @@
+__pycache__
+CooperGenomics.code-workspace
+.vscode/launch.json
+.vscode/settings.json
+local_settings.py
+output
+.DS_Store
+smtp_settings.py
+email_contacts.txt
+large_video_list.txt
+debug.log

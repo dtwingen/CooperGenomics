@@ -137,6 +137,7 @@ if username == "" or password == "" or api_key == "":
         print("Please put in your credentials")
         sys.exit()
 
+"""
 if smtp_host == "" or smtp_port == "" or smtp_email == "": # or smtp_password == "":
 
     # look to see if there are credentials in smtp_settings.py
@@ -148,6 +149,7 @@ if smtp_host == "" or smtp_port == "" or smtp_email == "": # or smtp_password ==
     if smtp_host == "" or smtp_port == "" or smtp_email == "": #or smtp_password == "":
         print("Please put in SMTP credentials for email notifications")
         sys.exit()
+"""
 
 ###
 # Set up the email notification service
@@ -302,10 +304,14 @@ camera_id_list = [i[1] for i in device_list if i[3] == 'camera']
 # filter by friendly camera name
 friendly_id_list = [i[2] for i in device_list if i[3] == 'camera']
 
+camera_id = ['100b2a71','10037e74','100b30cf','100badd7','1000f51e','1009a8c0','10058861','10014836','1003583a','100a9f81','100cbc5e','10039a34','1000f643','100bfd8e','1000865b','100f7ece','10098f7d','100cb05a','100584b3','100db5e9','100aa5c0','10070ab7','100b5101','1000a17b','10046c9d','10079d92','100404fc','100a16e7','10013cd9']
+
+"""
 # create merged list with camera ID and friendly camera name
 merged_camera_list = [i+'_'+j for i,j in zip(camera_id_list,friendly_id_list)]
 ''.join(merged_camera_list)
 print(merged_camera_list)
+"""
 
 # count of cameras found in the environment
 camera_list_len = len(camera_id_list)
@@ -345,9 +351,8 @@ def get_video_list(camera_id):
 print("Step 4: Gathering list of videos to download for each camera...")
 
 session_list = {}
-session_list_large = {}
 
-download_path = check_directory_create(current_wd,start_time)
+download_path = current_wd + start_time
 
 for camera_id in camera_id_list:
     video_list = get_video_list(camera_id)
